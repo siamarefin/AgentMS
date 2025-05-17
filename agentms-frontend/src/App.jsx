@@ -8,11 +8,16 @@ function App() {
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
-    // Add user message to chat history
-    setChatHistory([...chatHistory, { sender: "user", text: message }]);
+    const updatedHistory = [...chatHistory, { sender: "user", text: message }];
+    setChatHistory(updatedHistory);
+    setMessage(""); // Clear input immediately
+
+    setTimeout(() => {
+      const chatBox = document.querySelector(".chat-box");
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 100);
 
     try {
-      // Send message to backend
       const response = await fetch("http://localhost:8000/chat/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -20,36 +25,37 @@ function App() {
       });
 
       const data = await response.json();
-      // Add bot response to chat history
       setChatHistory([
-        ...chatHistory,
-        { sender: "user", text: message },
+        ...updatedHistory,
         { sender: "bot", text: data.response },
       ]);
     } catch (error) {
-      console.error("Error:", error);
       setChatHistory([
-        ...chatHistory,
-        { sender: "user", text: message },
-        { sender: "bot", text: "Error: Could not get response" },
+        ...updatedHistory,
+        { sender: "bot", text: "⚠️ Error: Could not get response." },
       ]);
     }
 
-    setMessage(""); // Clear input
+    setTimeout(() => {
+      const chatBox = document.querySelector(".chat-box");
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 100);
   };
 
   return (
-    <div className="App">
-      <h1>Chatbot</h1>
-      <div className="chat-container">
-        {chatHistory.map((chat, index) => (
-          <div key={index} className={`chat-message ${chat.sender}`}>
-            <strong>{chat.sender === "user" ? "You" : "Bot"}: </strong>
-            {chat.text}
+    <div className="app">
+      <h1 className="title">🤖 AgentMS</h1>
+      <div className="chat-box">
+        {chatHistory.map((chat, idx) => (
+          <div key={idx} className={`message ${chat.sender}`}>
+            <span className="sender">
+              {chat.sender === "user" ? "🧑 You" : "🤖 Bot"}:
+            </span>
+            <span className="text">{chat.text}</span>
           </div>
         ))}
       </div>
-      <div className="chat-input">
+      <div className="input-area">
         <input
           type="text"
           value={message}

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+
 app = FastAPI(title="Chatbot Backend", description="FastAPI backend for a chatbot using Qwen models")
 
 # Add CORS middleware
