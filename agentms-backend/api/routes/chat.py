@@ -5,12 +5,14 @@ import torch
 
 router = APIRouter()
 
+model_name = "distilgpt2"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
-# Load model and tokenizer once globally
-model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
 class ChatRequest(BaseModel):
     message: str
@@ -19,17 +21,16 @@ class ChatRequest(BaseModel):
 async def chat_endpoint(request: ChatRequest):
     input_text = request.message
 
-    # Encode and generate response tokens with attention_mask
     encoded = tokenizer(
         input_text + tokenizer.eos_token,
         return_tensors="pt",
         padding=True
     )
-    inputs = encoded["input_ids"]
-    attention_mask = encoded["attention_mask"]
+    input_ids = encoded["input_ids"].to(device)
+    attention_mask = encoded["attention_mask"].to(device)
 
     outputs = model.generate(
-        inputs,
+        input_ids,
         attention_mask=attention_mask,
         max_length=100,
         pad_token_id=tokenizer.eos_token_id,
@@ -40,8 +41,9 @@ async def chat_endpoint(request: ChatRequest):
         num_return_sequences=1,
     )
 
-    # Decode generated tokens to string
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    # Return the part generated after the input
-    return response
+    # Remove the prompt part from the output so only the generated text is returned
+    generated_text = decoded_output[len(input_text):].strip()
+
+    return generated_text
