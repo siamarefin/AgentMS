@@ -27,10 +27,14 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/chat/", {
+      const response = await fetch("http://localhost:11434/v1/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({
+          model: "qwen3:1.7b", // Ollama model name
+          prompt: userMessage,
+          stream: false, // disable streaming for simple response
+        }),
       });
 
       if (!response.ok) throw new Error("Network response not ok");
