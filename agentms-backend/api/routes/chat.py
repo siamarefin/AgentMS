@@ -1,14 +1,16 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+import google.generativeai as genai
+import os
 
 router = APIRouter()
 
-# Load GPT-2 model and tokenizer once at startup
-model_id = "gpt2"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(model_id)
-generator = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=100)
+# Configure Gemini API key
+os.environ["GOOGLE_API_KEY"] = "AIzaSyBhR8sZEibkB2TWMTiAy2YCWpBL85eyp_E"
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+
+# Load Gemini model
+model = genai.GenerativeModel("gemini-pro")
 
 class ChatRequest(BaseModel):
     message: str
@@ -17,11 +19,11 @@ class ChatRequest(BaseModel):
 async def chat_endpoint(request: ChatRequest):
     try:
         prompt = request.message
-        result = generator(prompt, max_new_tokens=100, do_sample=True, temperature=0.7)
-        response_text = result[0]["generated_text"][len(prompt):].strip()
+        response = model.generate_content(prompt)
 
-        print(f"💬 gpt2: {response_text}")
-        
+        response_text = response.text.strip()
+        print(f"💬 gemini: {response_text}")
+
         return {"response": response_text}
     except Exception as e:
         print(f"❌ Server error: {e}")
