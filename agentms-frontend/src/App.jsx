@@ -31,18 +31,31 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "qwen3:1.7b", // Ollama model name
+          model: "qwen3:1.7b",
           prompt: userMessage,
-          stream: false, // disable streaming for simple response
+          stream: false,
         }),
       });
 
       if (!response.ok) throw new Error("Network response not ok");
 
-      // Expecting a plain string "ok" from backend
-      const data = await response.text();
-      setChatHistory([...updatedHistory, { sender: "bot", text: data }]);
+      const data = await response.json();
+      const rawText = data?.choices?.[0]?.text || "⚠️ No response";
+
+      // 🧼 Clean out <think> tags and internal reasoning
+      const cleanText =
+        rawText
+          .replace(/<[^>]*>/g, "") // remove XML-style tags like <think>
+          .split(/\n\n+/) // split at double newlines
+          .filter(
+            (para) => /^[A-Z]/.test(para.trim()) && para.trim().length > 10 // filters plausible answers
+          )
+          .at(-1) // grab the last plausible segment
+          ?.trim() || "⚠️ Could not extract response";
+
+      setChatHistory([...updatedHistory, { sender: "bot", text: cleanText }]);
     } catch (error) {
+      console.error(error);
       setChatHistory([
         ...updatedHistory,
         { sender: "bot", text: "⚠️ Error: Could not get response." },
