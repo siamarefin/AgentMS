@@ -7,3 +7,7 @@ torchaudio
 torchvision 
 torch 
 google-generativeai
+langchain
+langchain-community
+pypdf
+python-multipart
